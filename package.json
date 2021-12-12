@@ -1,0 +1,21 @@
+{
+    "version": "1.0.0",
+    "name": "Random Timer",
+    "app-name": "RandomTimer",
+    "package-name": "static_app",
+    "project-type": "static",
+    "icon": "./assets/icon/icon.png",
+    "dist-path": "./dist",
+    "permission": [
+    ],
+    "description": "",
+    "author": "",
+    "license": "ISC",
+    "scripts": {
+        "build": "androidjs build"
+    },
+    "project-name": "Random Timer",
+    "theme": {
+        "fullScreen": true
+    }
+}

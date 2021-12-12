@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Random Timer</title>
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <h1>Random Timer</h1>
+    <form class="needs-validation" novalidate>
+        <div class="container">
+            <div style="height: 60px">
+                <div id="errorBox" class="row alert alert-danger d-none">
+                    <strong>Error: <span id="error"></span> </strong>
+                </div>
+            </div>
+            <div class="row align-items-start">
+                <div class="col-md-6">
+                    <span class="input-group-text">Minimum Minutes</span>
+                    <input type="number" class="form-control" aria-label="Minimum" id="minMin" onfocus="this.select();" onmouseup="return false;" onchange="stopTimer()" value="0.04">
+                </div>
+                <div class="col-md-6">
+                    <span class="input-group-text" id="basic-addon1">Maximum Minutes</span>
+                    <input type="number" class="form-control" aria-label="Maximum" id="maxMin"  onfocus="this.select();" onmouseup="return false;" onchange="stopTimer()" value="0.05">
+                </div>
+            </div>
+            <h3><label><input type="checkbox" id="showCountdown" checked="checked" onclick="toggleCountdownBox(this.checked)"/> Show countdown?</label></h3>
+            <div class="row justify-content-md-center" style="padding-top: 40px">
+                <button type="button" id="timerButton" class="btn btn-lg btn-primary col-md-3" onclick="startTimer()">Start Timer</button>
+            </div>
+            <h2 id="countdown"></h2>
+        </div>
+    </form>
+
+    <script>
+let timerInterval;
+let waitInterval;
+
+const Alarm = new Audio('alarm.mp3');
+
+function startTimer()
+{
+    const min = parseFloat(document.getElementById('minMin').value);
+    const max = parseFloat(document.getElementById('maxMin').value);
+
+    document.getElementById('errorBox').classList.add('d-none');
+    if (min > max) {
+        document.getElementById('error').innerText = 'The minimum time must be less than or equal to the maximum time.';
+        document.getElementById('errorBox').classList.remove('d-none');
+
+        return;
+    } else if (max > 1440) {
+        document.getElementById('error').innerText = 'The maximum time must be less than or equal to 1440 minutes (24 hours).';
+        document.getElementById('errorBox').classList.remove('d-none');
+
+        return;
+    }
+
+    startTimer.secondsToWait = betterRandom(min * 60, max * 60);
+
+    clearInterval(waitInterval);
+    resumeTimer();
+}
+
+function pauseTimer()
+{
+    clearInterval(waitInterval);
+
+    const timerButton = document.getElementById('timerButton');
+    timerButton.classList.remove('btn-primary');
+    timerButton.classList.add('btn-warning');
+    timerButton.innerText = 'Resume Timer';
+    timerButton.onclick = resumeTimer;
+}
+
+function resumeTimer()
+{
+    const timerButton = document.getElementById('timerButton');
+    timerButton.classList.remove('btn-primary');
+    timerButton.classList.add('btn-warning');
+    timerButton.innerText = 'Pause Timer';
+    timerButton.onclick = pauseTimer;
+
+    waitInterval = setInterval(() => {
+        const timeToWait = new Date(startTimer.secondsToWait * 1000).toISOString().substr(11, 8);
+
+        document.getElementById('countdown').innerText = `${timeToWait} (${startTimer.secondsToWait})`;
+        --startTimer.secondsToWait;
+
+        if (startTimer.secondsToWait <= 0) {
+            clearInterval(waitInterval);
+            beep();
+        }
+    }, 1000);
+}
+
+function stopTimer()
+{
+    // clearInterval(timerInterval);
+    Alarm.pause();
+    Alarm.currentTime = 0;
+
+    const timerButton = document.getElementById('timerButton');
+    timerButton.classList.add('btn-primary');
+    timerButton.classList.remove('btn-warning');
+    timerButton.classList.remove('btn-danger');
+    timerButton.innerText = 'Start Timer';
+    timerButton.onclick = startTimer;
+}
+
+function toggleCountdownBox(shouldShow)
+{
+    if (shouldShow) {
+        document.getElementById('countdown').classList.remove('d-none');
+    } else {
+        document.getElementById('countdown').classList.add('d-none');
+    }
+}
+
+function beep()
+{
+    const timerButton = document.getElementById('timerButton');
+    timerButton.classList.remove('btn-primary');
+    timerButton.classList.add('btn-danger');
+    timerButton.innerText = 'Stop Timer';
+    timerButton.onclick = stopTimer;
+
+    this.offset = 200;
+
+    clearInterval(timerInterval);
+    let secondsWaited = 0;
+
+    Alarm.play();
+
+    // timerInterval = setInterval(() => {
+    //     let modded = betterRandom(1, 3) - 2;
+    //     this.offset += (betterRandom(1, 5) * 2) * (modded);
+    //     let frequency = 200 + this.offset;
+    //     ++secondsWaited;
+    //     const timeWaited = new Date(secondsWaited * 1000).toISOString().substr(11, 8);
+
+    //     document.getElementById('countdown').innerText = `${timeWaited} (${secondsWaited})`;
+    //     --startTimer.secondsToWait;
+
+    //     //document.getElementById('countdown').innerText = `Frequency: ${frequency} | Modded: ${modded}`;
+    //     new Beep(22050).play(frequency, 0.5, [Beep.utils.amplify(8000)]);
+    //     // new Audio('alarm.mp3').play();
+    // }, 800)
+
+}
+
+function betterRandom(min, max)
+{
+    // The defacto JavaScript way:
+    // return Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // Generates a cryptographically-sound random number.
+    var rval = 0;
+    var range = (max + 1) - min;
+
+    var bits_needed = Math.ceil(Math.log2(range));
+    if (bits_needed > 53) {
+        throw new Exception("We cannot generate numbers larger than 53 bits.");
+    }
+    var bytes_needed = Math.ceil(bits_needed / 8);
+    var mask = Math.pow(2, bits_needed) - 1;
+    // 7776 -> (2^13 = 8192) -1 == 8191 or 0x00001111 11111111
+
+    // Create byte array and fill with N random numbers
+    var byteArray = new Uint32Array(bytes_needed);
+    window.crypto.getRandomValues(byteArray);
+
+    var p = (bytes_needed - 1) * 8;
+    for (var i = 0; i < bytes_needed; i++ ) {
+        rval += byteArray[i] * Math.pow(2, p);
+        p -= 8;
+    }
+
+    // Use & to apply the mask and reduce the number of recursive lookups
+    rval = rval & mask;
+
+    if (rval >= range) {
+        // Integer out of acceptable range
+        return betterRandom(min, max);
+    }
+
+    // Return an integer that falls within the range
+    return min + rval;
+}
+
+// ---- beep.js ------------
+// https://github.com/luciferous/beepjs
+(function(ns) {
+    var utils = {
+        amplify: function(gain) {
+            return function(sample) {
+                return sample * gain;
+            };
+        },
+        ushort: function(sample) {
+            return String.fromCharCode(255 & sample,
+                255 & sample >> 8);
+        },
+        ulong: function(sample) {
+            return String.fromCharCode(255 & sample,
+                255 & sample >> 8,
+                255 & sample >> 16,
+                255 & sample >> 24);
+        },
+        gcd: function(a, b) {
+            while (b) {
+                var a_ = a;
+                a = b, b = a_ % b;
+            }
+            return a;
+        },
+        lcm: function(a, b) {
+            return Math.floor(a * b / utils.gcd(a, b));
+        },
+        compose: function(fns) {
+            return function(a) {
+                for (var i = 0; i < fns.length; i++) {
+                    a = fns[i](a);
+                }
+                return a;
+            };
+        },
+        map: function(fn, items) {
+            var result = [];
+            for (var i = 0; i < items.length; i++) {
+                result.push(fn.call(this, items[i]));
+            }
+            return result;
+        },
+        getattr: function(attr) {
+            return function(items) {
+                return items[attr];
+            };
+        },
+        zip: function() {
+            if (arguments.length == 0) return [];
+            var lists = Array.prototype.slice.call(arguments);
+            var result = [];
+            var min = Math.min.apply(null, utils.map(utils.getattr("length"), lists));
+            for (var i = 0; i < min; i++) {
+                result.push(utils.map(utils.getattr(i), lists));
+            }
+            return result;
+        },
+        sum: function(numbers) {
+            return utils.foldl(function(a, b) { return a + b; }, numbers);
+        },
+        bind: function(ctx, fn) {
+            return function() {
+                var args = Array.prototype.slice.call(arguments);
+                return fn.apply(ctx, args);
+            };
+        },
+        foldl: function(fn, items) {
+            if (items.length == 1) return items[0];
+            var result = fn(items[0], items[1]);
+            for (var i = 2; i < items.length; i++) {
+                result = fn(result, items[i]);
+            }
+            return result;
+        },
+        mulmod: function(a, b, c) {
+            return (a * b) % c;
+        },
+        range: function(len) {
+            var result = [];
+            for (var i = 0; i < len; i++) {
+                result.push(i);
+            }
+            return result;
+        }
+    };
+    function Beep(samplerate) {
+        if (!(this instanceof Beep)) return new Beep(samplerate);
+        if (typeof samplerate != "number" || samplerate < 1) return null;
+        this.channels = 1;
+        this.bitdepth = 16;
+        this.samplerate = samplerate;
+        this.sine = [];
+        var factor = (2 * Math.PI) / parseFloat(samplerate);
+        for (var n = 0; n < samplerate; n++) {
+            this.sine.push(Math.sin(n * factor));
+        }
+    }
+    Beep.prototype = {
+        generate: function(freqs) {
+            freqs = freqs instanceof Array ? freqs : [freqs];
+            var map = utils.bind(this, utils.map);
+            var periods = map(function(a) {
+                return utils.lcm(this.samplerate, a) / a; }, freqs);
+            var lcm = utils.foldl(utils.lcm, periods);
+            var sample = function(time) {
+                return function(freq) {
+                    return this.sine[utils.mulmod(time, freq, this.samplerate)];
+                };
+            };
+            return map(function(t) { return utils.sum(map(sample(t), freqs)); },
+                utils.range(lcm));
+        },
+        encode: function(freqs, duration, filters) {
+            freqs = freqs instanceof Array ? freqs : [freqs];
+            var transforms = utils.compose(
+                (filters || []).concat([utils.ushort]));
+            var samples = utils.map(transforms, this.generate(freqs));
+            var reps = Math.ceil(duration * this.samplerate / samples.length);
+            var fulldata = new Array(reps + 1).join(samples.join(""));
+            var data = fulldata.substr(0, this.samplerate * duration * 2);
+            var fmtChunk = [
+                ["f", "m", "t", " "].join(""),
+                utils.ulong(Beep.PCM_CHUNK_SIZE),
+                utils.ushort(Beep.LINEAR_QUANTIZATION),
+                utils.ushort(this.channels),
+                utils.ulong(this.samplerate),
+                utils.ulong(this.samplerate * this.channels * this.bitdepth / 8),
+                utils.ushort(this.bitdepth / 8),
+                utils.ushort(this.bitdepth)
+            ].join("");
+            var dataChunk = [
+                ["d", "a", "t", "a"].join(""),
+                utils.ulong(data.length * this.channels * this.bitdepth / 8),
+                data
+            ].join("");
+            var header = [
+                ["R", "I", "F", "F"].join(""),
+                utils.ulong(4 + (8 + fmtChunk.length) + (8 + dataChunk.length)),
+                ["W", "A", "V", "E"].join("")
+            ].join("");
+            return [header, fmtChunk, dataChunk].join("");
+        },
+        play: function(freq, duration, filters, callback) {
+            filters = filters || [];
+            var data = btoa(this.encode(freq, duration, filters));
+            var audio = document.createElement("audio");
+            audio.src = "data:audio/x-wav;base64," + data;
+            audio.play();
+            if (typeof callback != 'undefined') {
+                audio.onended = callback;
+            }
+        }
+    };
+    Beep.LINEAR_QUANTIZATION = 1;
+    Beep.PCM_CHUNK_SIZE = 16;
+    Beep.utils = utils;
+    ns.Beep = Beep;
+})(window[window.NS_BEEP] || window);
+
+    </script>
+</body>
+</html>
